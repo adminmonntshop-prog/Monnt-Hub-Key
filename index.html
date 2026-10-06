@@ -1,0 +1,190 @@
+อ๋อ! เข้าใจแล้วครับ! ยินดีครับ ผมจัดให้เองเลยครับ! 😄👍
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monnt Hub - Get Key System</title>
+
+    <!-- Google reCAPTCHA API -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body {
+            background-color: #0f1623;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background-color: #192337;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            border: 1px solid #283754;
+        }
+        h1 { color: #00c8ff; margin-top: 0; font-size: 24px; }
+        p { color: #b0c4de; font-size: 14px; margin-bottom: 20px; }
+        .recaptcha-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .btn-get {
+            width: 100%;
+            padding: 12px;
+            background-color: #00aa50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-get:hover { background-color: #008840; }
+        .status-msg {
+            margin-top: 15px;
+            font-size: 13px;
+            min-height: 20px;
+        }
+        .key-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #0f1623;
+            border-radius: 8px;
+            border: 1px solid #00c8ff;
+            display: none;
+        }
+        .key-text {
+            font-family: monospace;
+            font-size: 13px;
+            word-break: break-all;
+            color: #00ff78;
+            margin-bottom: 12px;
+            background: #080d14;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .btn-copy {
+            width: 100%;
+            padding: 10px;
+            background-color: #0078d7;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-copy:hover { background-color: #005a9e; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🔑 Monnt Hub Key System</h1>
+        <p>ยืนยันตัวตนเพื่อรับคีย์ใช้งานฟรี (8 Hours Key)</p>
+
+        <!-- 🛡️ ช่องยืนยัน Google reCAPTCHA -->
+        <div class="recaptcha-wrapper">
+            <div class="g-recaptcha" data-sitekey="6LfDPOItAAAAAJomQ5SugyFPsWLLCXNZWGcS_QkR"></div>
+        </div>
+
+        <button class="btn-get" onclick="handleGetKey()">รับคีย์ (Get Key)</button>
+        <div id="statusMsg" class="status-msg"></div>
+
+        <!-- 📦 กล่องแสดงคีย์เมื่อสร้างสำเร็จ -->
+        <div id="keyBox" class="key-box">
+            <div id="keyDisplay" class="key-text"></div>
+            <button class="btn-copy" onclick="copyKey()">📋 Copy Key (คัดลอกคีย์)</button>
+        </div>
+    </div>
+
+    <script>
+        // 📌 ตั้งค่าการเชื่อมต่อ Supabase
+        const SUPABASE_URL = "https://ulsujpqrdesndmuksqkr.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_mMHZfdWQC_8jaIQi40QLww_cJJI6scB";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ฟังก์ชันสุ่มรหัส 22 ตัวอักษร
+        function generateRandomCode(length) {
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            let result = "";
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        async function handleGetKey() {
+            const statusDiv = document.getElementById("statusMsg");
+            const keyBox = document.getElementById("keyBox");
+            const keyDisplay = document.getElementById("keyDisplay");
+
+            statusDiv.innerText = "";
+            statusDiv.style.color = "#ff5050";
+
+            // 1. ตรวจสอบว่ายืนยัน reCAPTCHA หรือยัง
+            const recaptchaResponse = grecaptcha.getResponse();
+            if (!recaptchaResponse) {
+                statusDiv.innerText = "⚠️ กรุณาติ๊กยืนยัน reCAPTCHA ด้านบนก่อนครับ!";
+                return;
+            }
+
+            statusDiv.style.color = "#ffc800";
+            statusDiv.innerText = "กำลังสร้างคีย์และบันทึกลงระบบ...";
+
+            // 2. สุ่มคีย์ฟอร์แมต MonntHub_8H-[สุ่ม 22 ตัว]
+            const randomPart = generateRandomCode(22);
+            const fullKey = "MonntHub_8H-" + randomPart;
+
+            try {
+                // 3. บันทึกคีย์ลงตาราง keys บน Supabase
+                const { data, error } = await supabaseClient
+                    .from('keys')
+                    .insert([
+                        { key_code: fullKey, status: 'active' }
+                    ]);
+
+                if (error) {
+                    console.error(error);
+                    statusDiv.style.color = "#ff5050";
+                    statusDiv.innerText = "❌ บันทึกคีย์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
+                } else {
+                    statusDiv.style.color = "#00ff78";
+                    statusDiv.innerText = "✅ สร้างคีย์สำเร็จแล้ว!";
+                    keyDisplay.innerText = fullKey;
+                    keyBox.style.display = "block";
+                    
+                    // รีเซ็ตปุ่ม reCAPTCHA
+                    grecaptcha.reset();
+                }
+            } catch (err) {
+                console.error(err);
+                statusDiv.style.color = "#ff5050";
+                statusDiv.innerText = "❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล";
+            }
+        }
+
+        function copyKey() {
+            const keyText = document.getElementById("keyDisplay").innerText;
+            navigator.clipboard.writeText(keyText).then(() => {
+                alert("📋 คัดลอกคีย์เรียบร้อยแล้ว!");
+            });
+        }
+    </script>
+</body>
+</html>
