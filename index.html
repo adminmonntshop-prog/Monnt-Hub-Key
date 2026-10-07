@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -10,116 +8,308 @@
     <!-- Google reCAPTCHA API -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
-    <!-- Supabase JS Client -->
+    <!-- Supabase JS Client v2 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body {
-            background-color: #0f1623;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+        /* 🎨 CSS Variables - โหมดสว่างนวล (Light Mode Default) */
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --card-border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --key-box-bg: #f1f5f9;
+            --key-box-border: #cbd5e1;
+            
+            /* สีฟ้าและน้ำเงินคงเดิมทุกโหมด */
+            --blue-primary: #007aff;
+            --blue-hover: #0056b3;
+            --blue-glow: rgba(0, 122, 255, 0.35);
+        }
+
+        /* 🌙 Auto Dark Mode - ปรับตามโหมดโทรศัพท์อัตโนมัติ */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #0b1120;
+                --card-bg: #162032;
+                --card-border: #1e293b;
+                --text-main: #f8fafc;
+                --text-sub: #94a3b8;
+                --key-box-bg: #0f172a;
+                --key-box-border: #334155;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
+            padding: 0;
+            font-family: 'Kanit', 'Segoe UI', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
         }
+
+        /* 🎴 Container / Card */
         .container {
-            background-color: #192337;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
             width: 100%;
             max-width: 420px;
+            border-radius: 20px;
+            padding: 28px 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
             text-align: center;
-            border: 1px solid #283754;
+            position: relative;
         }
-        h1 { color: #00c8ff; margin-top: 0; font-size: 24px; }
-        p { color: #b0c4de; font-size: 14px; margin-bottom: 20px; }
+
+        /* 🥷 Header & Logo มุมบนซ้ายของการ์ด */
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .card-logo {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 10px var(--blue-glow));
+            flex-shrink: 0;
+        }
+
+        .header-text h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--blue-primary);
+            line-height: 1.2;
+            margin: 0;
+        }
+
+        .header-text p {
+            font-size: 0.82rem;
+            color: var(--text-sub);
+            margin-top: 3px;
+        }
+
+        /* 🛡️ reCAPTCHA Wrapper */
         .recaptcha-wrapper {
             display: flex;
             justify-content: center;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
+            overflow: hidden;
         }
-        .btn-get {
+
+        /* 🟦 ปุ่มกด Get Key (สีน้ำเงินมิติ 3D + เงาฟุ้ง) */
+        .btn-blue-3d {
             width: 100%;
-            padding: 12px;
-            background-color: #00aa50;
-            color: white;
+            padding: 14px 20px;
             border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 16px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #0084ff, #0052d4);
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: 0.2s;
+            box-shadow: 0 8px 20px var(--blue-glow), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        .btn-get:hover { background-color: #008840; }
-        .status-msg {
-            margin-top: 15px;
-            font-size: 13px;
-            min-height: 20px;
+
+        .btn-blue-3d:hover {
+            background: linear-gradient(135deg, #0073e6, #0043b3);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(0, 122, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
         }
+
+        .btn-blue-3d:active {
+            transform: translateY(1px);
+            box-shadow: 0 4px 10px var(--blue-glow);
+        }
+
+        .btn-blue-3d:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ⚠️ กล่องเตือนคีย์เดิม */
+        .alert-box {
+            background-color: rgba(234, 179, 8, 0.12);
+            border: 1px solid rgba(234, 179, 8, 0.4);
+            color: #d97706;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .alert-box { color: #fbbf24; }
+        }
+
+        /* ⬇️ ลูกศรชี้ลงอนิเมชัน */
+        .arrow-down {
+            font-size: 2rem;
+            margin: 4px 0 10px 0;
+            animation: bounce 1.5s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-8px); }
+            60% { transform: translateY(-4px); }
+        }
+
+        /* 📦 กล่องแสดงผลคีย์ */
         .key-box {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #0f1623;
-            border-radius: 8px;
-            border: 1px solid #00c8ff;
-            display: none;
+            background-color: var(--key-box-bg);
+            border: 2px dashed var(--key-box-border);
+            padding: 14px;
+            border-radius: 12px;
+            margin: 14px 0;
         }
+
         .key-text {
             font-family: monospace;
-            font-size: 13px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--blue-primary);
             word-break: break-all;
-            color: #00ff78;
+            margin-bottom: 8px;
+        }
+
+        .time-badge {
+            display: inline-block;
+            font-size: 0.8rem;
+            color: var(--text-sub);
             margin-bottom: 12px;
-            background: #080d14;
-            padding: 10px;
-            border-radius: 4px;
         }
+
+        /* 📋 ปุ่มคัดลอกคีย์ */
         .btn-copy {
-            width: 100%;
-            padding: 10px;
-            background-color: #0078d7;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
         }
-        .btn-copy:hover { background-color: #005a9e; }
+        .btn-copy:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            box-shadow: 0 12px 25px rgba(16, 185, 129, 0.45);
+        }
+
+        .status-msg {
+            margin-top: 12px;
+            font-size: 0.85rem;
+            min-height: 20px;
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>🔑 Monnt Hub Key System</h1>
-        <p>ยืนยันตัวตนเพื่อรับคีย์ใช้งานฟรี (8 Hours Key)</p>
-
-        <!-- 🛡️ ช่องยืนยัน Google reCAPTCHA -->
-        <div class="recaptcha-wrapper">
-            <div class="g-recaptcha" data-sitekey="6LfTP-ItAAAAAOhtEvGqoUzTgCjC9YC0x6-hc5KP"></div>
+        <!-- 🥷 หัวการ์ด + โลโก้ภาพ 13042.webp (พร้อม fallback 12950.jpg) -->
+        <div class="card-header">
+            <img src="13042.webp" alt="Monnt Hub Logo" class="card-logo" onerror="this.src='12950.jpg'">
+            <div class="header-text">
+                <h1>Monnt Hub Key</h1>
+                <p>ยืนยันตัวตนเพื่อรับคีย์ใช้งานฟรี (8 Hours Key)</p>
+            </div>
         </div>
 
-        <button class="btn-get" onclick="handleGetKey()">รับคีย์ (Get Key)</button>
+        <!-- 📌 ส่วนแสดงผลหลัก (ควบคุมด้วย JS) -->
+        <div id="mainContent">
+            <!-- 🛡️ ช่องยืนยัน Google reCAPTCHA -->
+            <div class="recaptcha-wrapper">
+                <div class="g-recaptcha" data-sitekey="6LfTP-ItAAAAAOhtEvGqoUzTgCjC9YC0x6-hc5KP"></div>
+            </div>
+
+            <!-- 🟦 ปุ่มรับคีย์สีน้ำเงินมิติ 3D -->
+            <button class="btn-blue-3d" id="btnGet" onclick="handleGetKey()">
+                🔑 รับคีย์ (Get Key)
+            </button>
+        </div>
+
         <div id="statusMsg" class="status-msg"></div>
 
-        <!-- 📦 กล่องแสดงคีย์เมื่อสร้างสำเร็จ -->
-        <div id="keyBox" class="key-box">
+        <!-- 📦 กล่องแสดงผลคีย์เมื่อสร้างสำเร็จ -->
+        <div id="keyBox" class="key-box" style="display: none;">
             <div id="keyDisplay" class="key-text"></div>
-            <button class="btn-copy" onclick="copyKey()">📋 Copy Key (คัดลอกคีย์)</button>
+            <div id="timeBadge" class="time-badge"></div>
+            <button class="btn-blue-3d btn-copy" onclick="copyKey()">📋 Copy Key (คัดลอกคีย์)</button>
         </div>
     </div>
 
     <script>
-        // 📌 ตั้งค่าการเชื่อมต่อ Supabase
+        // 📌 ตั้งค่าการเชื่อมต่อ Supabase Client JS V2
         const SUPABASE_URL = "https://ulsujpqrdesndmuksqkr.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_mMHZfdWQC_8jaIQi40QLww_cJJI6scB";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const KEY_LIFETIME_MS = 8 * 60 * 60 * 1000; // 8 ชั่วโมง
 
-        // ฟังก์ชันสุ่มรหัส 22 ตัวอักษร
+        // 🔄 เช็กคีย์เดิมในเครื่องทันทีเมื่อเปิดหน้าเว็บ
+        window.addEventListener('DOMContentLoaded', checkExistingKey);
+
+        function checkExistingKey() {
+            const savedData = localStorage.getItem("monnt_saved_key");
+            if (savedData) {
+                try {
+                    const keyObj = JSON.parse(savedData);
+                    const elapsedTime = Date.now() - keyObj.timestamp;
+
+                    // ถ้าคีย์ยังไม่หมดอายุ (< 8 ชั่วโมง)
+                    if (elapsedTime < KEY_LIFETIME_MS) {
+                        const remainingMs = KEY_LIFETIME_MS - elapsedTime;
+                        const hrs = Math.floor(remainingMs / (1000 * 60 * 60));
+                        const mins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+
+                        renderExistingKeyUI(keyObj.key, hrs, mins);
+                    } else {
+                        localStorage.removeItem("monnt_saved_key");
+                    }
+                } catch (e) {
+                    localStorage.removeItem("monnt_saved_key");
+                }
+            }
+        }
+
+        // 🖼️ แสดงผล UI เมื่อพบคีย์เดิมที่ยังใช้งานได้
+        function renderExistingKeyUI(keyCode, hrs, mins) {
+            const mainContent = document.getElementById("mainContent");
+            const keyBox = document.getElementById("keyBox");
+            const keyDisplay = document.getElementById("keyDisplay");
+            const timeBadge = document.getElementById("timeBadge");
+
+            mainContent.innerHTML = `
+                <div class="alert-box">
+                    ⚠️ คุณมีคีย์เดิมที่ยังไม่หมดอายุอยู่แล้ว!
+                </div>
+                <div class="arrow-down">👇</div>
+            `;
+
+            keyDisplay.innerText = keyCode;
+            timeBadge.innerText = `⏱️ เวลาคีย์คงเหลือประมาณ: ${hrs} ชั่วโมง ${mins} นาที`;
+            keyBox.style.display = "block";
+        }
+
+        // 🎲 สุ่มรหัส 22 ตัวอักษร
         function generateRandomCode(length) {
             const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
             let result = "";
@@ -129,22 +319,24 @@
             return result;
         }
 
+        // ⚡ ฟังก์ชันสร้างและบันทึกคีย์
         async function handleGetKey() {
             const statusDiv = document.getElementById("statusMsg");
-            const keyBox = document.getElementById("keyBox");
-            const keyDisplay = document.getElementById("keyDisplay");
+            const btnGet = document.getElementById("btnGet");
 
             statusDiv.innerText = "";
-            statusDiv.style.color = "#ff5050";
+            statusDiv.style.color = "#ef4444";
 
-            // 1. ตรวจสอบว่ายืนยัน reCAPTCHA หรือยัง
+            // 1. ตรวจสอบ Google reCAPTCHA
             const recaptchaResponse = grecaptcha.getResponse();
             if (!recaptchaResponse) {
                 statusDiv.innerText = "⚠️ กรุณาติ๊กยืนยัน reCAPTCHA ด้านบนก่อนครับ!";
                 return;
             }
 
-            statusDiv.style.color = "#ffc800";
+            btnGet.disabled = true;
+            btnGet.innerText = "⏳ กำลังสร้างคีย์...";
+            statusDiv.style.color = "#f59e0b";
             statusDiv.innerText = "กำลังสร้างคีย์และบันทึกลงระบบ...";
 
             // 2. สุ่มคีย์ฟอร์แมต MonntHub_8H-[สุ่ม 22 ตัว]
@@ -161,27 +353,44 @@
 
                 if (error) {
                     console.error(error);
-                    statusDiv.style.color = "#ff5050";
+                    statusDiv.style.color = "#ef4444";
                     statusDiv.innerText = "❌ บันทึกคีย์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
+                    btnGet.disabled = false;
+                    btnGet.innerText = "🔑 รับคีย์ (Get Key)";
                 } else {
-                    statusDiv.style.color = "#00ff78";
+                    // เซฟคีย์ลง localStorage ในเครื่องผู้ใช้
+                    localStorage.setItem("monnt_saved_key", JSON.stringify({
+                        key: fullKey,
+                        timestamp: Date.now()
+                    }));
+
+                    statusDiv.style.color = "#10b981";
                     statusDiv.innerText = "✅ สร้างคีย์สำเร็จแล้ว!";
-                    keyDisplay.innerText = fullKey;
-                    keyBox.style.display = "block";
                     
-                    // รีเซ็ตปุ่ม reCAPTCHA
-                    grecaptcha.reset();
+                    renderExistingKeyUI(fullKey, 8, 0);
+
+                    // รีเซ็ต reCAPTCHA
+                    if (typeof grecaptcha !== 'undefined') {
+                        grecaptcha.reset();
+                    }
                 }
             } catch (err) {
                 console.error(err);
-                statusDiv.style.color = "#ff5050";
+                statusDiv.style.color = "#ef4444";
                 statusDiv.innerText = "❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล";
+                btnGet.disabled = false;
+                btnGet.innerText = "🔑 รับคีย์ (Get Key)";
             }
         }
 
+        // 📋 คัดลอกคีย์
         function copyKey() {
             const keyText = document.getElementById("keyDisplay").innerText;
             navigator.clipboard.writeText(keyText).then(() => {
+                const statusDiv = document.getElementById("statusMsg");
+                statusDiv.style.color = "#007aff";
+                statusDiv.innerText = "📋 คัดลอกคีย์เรียบร้อยแล้ว!";
+            }).catch(() => {
                 alert("📋 คัดลอกคีย์เรียบร้อยแล้ว!");
             });
         }
