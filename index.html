@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -6,14 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monnt Hub - Key System</title>
 
-    <!-- 1️⃣ ดึง Supabase UMD Bundle สำหรับ Browser โดยเฉพาะ (แก้ไขลิงก์สมบูรณ์) -->
+    <!-- 📌 1. ดึง Supabase UMD สำหรับ Browser โดยตรงจาก unpkg (แก้ปัญหาสคริปต์พัง 100%) -->
     <script src="[suspicious link removed]"></script>
-    <script>
-        // สำรองกรณี CDN แรกโดนบล็อก ให้ดึงจาก unpkg แทนทันที
-        if (typeof window.supabase === 'undefined') {
-            document.write('<script src="[suspicious link removed]"><\/script>');
-        }
-    </script>
 
     <!-- Google reCAPTCHA -->
     <script src="[suspicious link removed]" async defer></script>
@@ -255,8 +248,12 @@
 
     // ⚡ ฟังก์ชันดึง Supabase Client
     function getSupabaseClient() {
-        if (!supabaseClient && typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        if (!supabaseClient) {
+            if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            } else {
+                console.error("❌ window.supabase ยังไม่พร้อมใช้งาน");
+            }
         }
         return supabaseClient;
     }
@@ -265,7 +262,7 @@
     async function loginWithGoogle() {
         const client = getSupabaseClient();
         if (!client) {
-            alert("❌ ไม่สามารถดึงสคริปต์ Supabase ได้\nโปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่อีกครั้งครับ");
+            alert("❌ ไม่สามารถดึงสคริปต์ Supabase ได้ กรุณารีเฟรชหน้าเว็บแล้วลองใหม่อีกครั้งครับ");
             return;
         }
 
