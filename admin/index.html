@@ -70,6 +70,7 @@
             border-radius: 10px;
             text-decoration: none;
             font-size: 0.85rem;
+            transition: all 0.2s ease;
         }
         .btn-back:hover {
             color: var(--text-main);
@@ -107,7 +108,8 @@
             font-weight: 600;
         }
         .badge-active { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-        .badge-suspended { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        .badge-suspended { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+        .badge-deleted { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 
         .btn-action {
             padding: 5px 12px;
@@ -117,6 +119,7 @@
             font-weight: 600;
             cursor: pointer;
             margin-right: 4px;
+            transition: all 0.2s ease;
         }
         .btn-suspend { background: #f59e0b; color: #fff; }
         .btn-unsuspend { background: #10b981; color: #fff; }
@@ -132,12 +135,14 @@
 <body>
 
 <div class="admin-card">
+    <!-- 🔒 หน้าจอบล็อกกรณีไม่ใช่อีเมล ADMIN -->
     <div id="deniedScreen" class="access-denied" style="display: none;">
         <h2>⛔ สิทธิ์ไม่ถูกต้อง (Access Denied)</h2>
         <p id="deniedMsg" style="color: var(--text-sub); margin-bottom: 16px;">กำลังตรวจสอบสิทธิ์...</p>
         <a href="../index.html" class="btn-back">⬅️ กลับหน้าหลัก</a>
     </div>
 
+    <!-- 🛡️ แผงควบคุม ADMIN (แสดงเมื่อเป็น admin.monntshop@gmail.com เท่านั้น) -->
     <div id="adminScreen" style="display: none;">
         <div class="header">
             <div>
@@ -169,12 +174,14 @@
 </div>
 
 <script>
+    // 📌 ตั้งค่าการเชื่อมต่อ Supabase Client
     const SUPABASE_URL = "[suspicious link removed]";
     const SUPABASE_ANON_KEY = "sb_publishable_mMHZfdWQC_8jaIQi40QLww_cJJI6scB";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const ADMIN_EMAIL = "admin.monntshop@gmail.com";
 
+    // 🔄 ตรวจสอบสิทธิ์ทันทีเมื่อเปิดหน้า
     window.addEventListener('DOMContentLoaded', async () => {
         const { data: { session } } = await supabaseClient.auth.getSession();
         
@@ -200,6 +207,7 @@
         document.getElementById("deniedMsg").innerText = msg;
     }
 
+    // 📥 ดึงข้อมูลคีย์ทั้งหมดเรียงจากล่าสุดไปเก่าสุด
     async function loadKeysData() {
         const tbody = document.getElementById("keyTableBody");
         tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">⏳ กำลังโหลดข้อมูล...</td></tr>`;
@@ -223,17 +231,21 @@
 
                 const userEmail = item.claimed_by || item.user_email || "ไม่ระบุ";
                 const createdTime = item.created_at ? new Date(item.created_at).toLocaleString('th-TH') : "ไม่ระบุเวลา";
+                
+                let statusBadge = `<span class="badge badge-active">ใช้งานได้</span>`;
+                if (item.status === "suspended") {
+                    statusBadge = `<span class="badge badge-suspended">ระงับอยู่</span>`;
+                } else if (item.status === "deleted") {
+                    statusBadge = `<span class="badge badge-deleted">กำลังลบ (20s)</span>`;
+                }
+
                 const isSuspended = item.status === "suspended";
 
                 tr.innerHTML = `
                     <td style="font-family: monospace; font-weight: bold; color: var(--blue-primary);">${item.key_code}</td>
                     <td>${userEmail}</td>
                     <td>${createdTime}</td>
-                    <td>
-                        <span class="badge ${isSuspended ? 'badge-suspended' : 'badge-active'}">
-                            ${isSuspended ? 'ระงับอยู่' : 'ใช้งานได้'}
-                        </span>
-                    </td>
+                    <td>${statusBadge}</td>
                     <td>
                         <button class="btn-action ${isSuspended ? 'btn-unsuspend' : 'btn-suspend'}" onclick="toggleSuspendKey('${item.key_code}', '${item.status}')">
                             ${isSuspended ? '✅ ปลดระงับ' : '⛔ ระงับ'}
@@ -271,7 +283,7 @@
         }
     }
 
-    // 🗑️ ลบคีย์ถาวร (ต้องพิมพ์ #monnt2026)
+    // 🗑️ ลบคีย์ถาวร (ต้องพิมพ์ #monnt2026 + เปลี่ยนสถานะเป็น deleted รอ 20 วินาที)
     async function deleteKey(keyCode) {
         const userInput = prompt(`⚠️ คุณแน่ใจต้องการลบคีย์นี้\nโปรดพิมพ์ #monnt2026 เพื่อลบ\n\nKey: ${keyCode}`);
 
@@ -282,17 +294,29 @@
             return;
         }
 
-        const { error } = await supabaseClient
+        // ขั้นตอนที่ 1: เปลี่ยนสถานะเป็น 'deleted' ให้ Roblox สแกนเจอแล้วตัดสัญญาณพร้อมแจ้งเตือน
+        const { error: updateErr } = await supabaseClient
             .from('keys')
-            .delete()
+            .update({ status: 'deleted' })
             .eq('key_code', keyCode);
 
-        if (error) {
-            alert("❌ ลบคีย์ไม่สำเร็จ: " + error.message);
-        } else {
-            alert("✅ ลบคีย์เรียบร้อยแล้ว!");
-            await loadKeysData();
+        if (updateErr) {
+            alert("❌ เกิดข้อผิดพลาดในการส่งคำสั่งลบ: " + updateErr.message);
+            return;
         }
+
+        await loadKeysData();
+        alert("⏳ ส่งคำสั่งลบคีย์แล้ว! ระบบจะตัดสัญญาณฝั่งผู้เล่นและลบข้อมูลถาวรภายใน 20 วินาที");
+
+        // ขั้นตอนที่ 2: หน่วงเวลา 20 วินาที แล้วค่อยลบออกจาก Supabase ถาวร
+        setTimeout(async () => {
+            await supabaseClient
+                .from('keys')
+                .delete()
+                .eq('key_code', keyCode);
+            
+            await loadKeysData();
+        }, 20000);
     }
 </script>
 
