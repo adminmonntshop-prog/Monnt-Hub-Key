@@ -382,9 +382,9 @@
         });
     }
 </script>
-
     
-<!-- ⚙️ ชุดปุ่มฟันเฟือง Debug Log (รวม HTML + CSS + JS ในจุดเดียว) -->
+
+<!-- ⚙️ ชุดปุ่มฟันเฟือง Debug Log (ฉบับแก้ไขโค้ดสมบูรณ์) -->
 <style>
     .btn-debug-gear {
         position: fixed;
@@ -395,7 +395,7 @@
         border-radius: 50%;
         background-color: #1e293b;
         border: 2px solid #007aff;
-        color: #fff;
+        color: #ffffff;
         font-size: 1.4rem;
         cursor: pointer;
         box-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
@@ -403,55 +403,101 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.2s ease;
     }
-    .btn-debug-gear:hover { transform: rotate(45deg) scale(1.1); }
     .debug-modal {
         position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
         background: rgba(0, 0, 0, 0.7);
         z-index: 10000;
-        display: flex; align-items: center; justify-content: center;
+        display: none;
+        align-items: center;
+        justify-content: center;
         padding: 16px;
     }
     .debug-content {
-        background: #0f172a; border: 1px solid #334155;
-        border-radius: 16px; width: 100%; max-width: 500px;
-        max-height: 80vh; display: flex; flex-direction: column;
-        overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 500px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
     .debug-header {
-        padding: 12px 16px; background: #1e293b;
-        color: #38bdf8; font-weight: bold;
-        display: flex; justify-content: space-between; align-items: center;
+        padding: 12px 16px;
+        background: #1e293b;
+        color: #38bdf8;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
-    .btn-close-debug { background: none; border: none; color: #ef4444; font-size: 1.5rem; cursor: pointer; }
+    .btn-close-debug {
+        background: none;
+        border: none;
+        color: #ef4444;
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
     .debug-log-list {
-        padding: 12px; overflow-y: auto; flex: 1;
-        font-family: monospace; font-size: 0.82rem;
-        display: flex; flex-direction: column; gap: 8px;
+        padding: 12px;
+        overflow-y: auto;
+        flex: 1;
+        font-family: monospace;
+        font-size: 0.82rem;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
-    .log-item { padding: 8px 10px; border-radius: 6px; word-break: break-all; }
-    .log-item.error { background: rgba(239, 68, 68, 0.15); color: #f87171; border-left: 3px solid #ef4444; }
-    .[นำลิงก์ที่น่าสงสัยออกแล้ว] { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-left: 3px solid #38bdf8; }
-    .debug-footer { padding: 10px 16px; background: #1e293b; display: flex; gap: 10px; justify-content: flex-end; }
+    .log-item {
+        padding: 8px 10px;
+        border-radius: 6px;
+        word-break: break-all;
+    }
+    .log-item-error {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+        border-left: 3px solid #ef4444;
+    }
+    .log-item-info {
+        background: rgba(56, 189, 248, 0.15);
+        color: #38bdf8;
+        border-left: 3px solid #38bdf8;
+    }
+    .debug-footer {
+        padding: 10px 16px;
+        background: #1e293b;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
     .debug-footer button {
-        padding: 6px 12px; border-radius: 8px; border: none;
-        background: #007aff; color: #fff; font-size: 0.8rem; font-weight: bold; cursor: pointer;
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: none;
+        background: #007aff;
+        color: #ffffff;
+        font-size: 0.8rem;
+        font-weight: bold;
+        cursor: pointer;
     }
 </style>
 
-<button class="btn-debug-gear" onclick="toggleDebugModal()" title="ดู Error Log">⚙️</button>
+<button class="btn-debug-gear" onclick="toggleDebugModal()">⚙️</button>
 
-<div id="debugModal" class="debug-modal" style="display: none;">
+<div id="debugModal" class="debug-modal">
     <div class="debug-content">
         <div class="debug-header">
             <span>🛠️ Debug & Error Log</span>
             <button class="btn-close-debug" onclick="toggleDebugModal()">×</button>
         </div>
         <div id="debugLogList" class="debug-log-list">
-            <div class="log-item info">💡 ยังไม่มีข้อความ Error บันทึกอยู่</div>
+            <div class="log-item log-item-info">💡 ยังไม่มีข้อความ Error บันทึกอยู่</div>
         </div>
         <div class="debug-footer">
             <button onclick="copyDebugLogs()">📋 คัดลอก Log</button>
@@ -461,46 +507,60 @@
 </div>
 
 <script>
-    const debugLogs = [];
-    function addDebugLog(msg, type = 'error') {
-        const time = new Date().toLocaleTimeString('th-TH');
-        const logText = `[${time}] ${msg}`;
-        debugLogs.push({ text: logText, type: type });
-        const logListDiv = document.getElementById("debugLogList");
-        if (logListDiv) {
-            if (debugLogs.length === 1) logListDiv.innerHTML = "";
-            const item = document.createElement("div");
-            item.className = `log-item ${type}`;
+    var debugLogsList = [];
+
+    function addDebugLog(msg, type) {
+        var logType = type || 'error';
+        var time = new Date().toLocaleTimeString('th-TH');
+        var logText = '[' + time + '] ' + msg;
+        debugLogsList.push(logText);
+
+        var listContainer = document.getElementById("debugLogList");
+        if (listContainer) {
+            if (debugLogsList.length === 1) {
+                listContainer.innerHTML = "";
+            }
+            var item = document.createElement("div");
+            item.className = "log-item log-item-" + logType;
             item.innerText = logText;
-            logListDiv.appendChild(item);
-            logListDiv.scrollTop = logListDiv.scrollHeight;
+            listContainer.appendChild(item);
         }
     }
-    window.addEventListener('error', (e) => {
-        addDebugLog(`❌ Global Error: ${e.message} (${e.filename}:${e.lineno})`, 'error');
+
+    window.addEventListener('error', function(e) {
+        addDebugLog('❌ Error: ' + e.message, 'error');
     });
-    window.addEventListener('unhandledrejection', (e) => {
-        addDebugLog(`❌ Unhandled Promise: ${e.reason}`, 'error');
+
+    window.addEventListener('unhandledrejection', function(e) {
+        addDebugLog('❌ Unhandled Promise: ' + e.reason, 'error');
     });
-    const originalConsoleError = console.error;
-    console.error = function(...args) {
-        originalConsoleError.apply(console, args);
-        addDebugLog(`❌ Console Error: ${args.join(' ')}`, 'error');
-    };
+
     function toggleDebugModal() {
-        const modal = document.getElementById("debugModal");
-        [นำลิงก์ที่น่าสงสัยออกแล้ว].display = [นำลิงก์ที่น่าสงสัยออกแล้ว].display === "none" ? "flex" : "none";
+        var modal = document.getElementById("debugModal");
+        if (modal) {
+            var currentDisplay = window.getComputedStyle(modal).display;
+            [นำลิงก์ที่น่าสงสัยออกแล้ว].display = (currentDisplay === "none") ? "flex" : "none";
+        }
     }
+
     function clearDebugLogs() {
-        debugLogs.length = 0;
-        document.getElementById("debugLogList").innerHTML = `<div class="log-item info">💡 ล้าง Log เรียบร้อยแล้ว</div>`;
+        debugLogsList = [];
+        var listContainer = document.getElementById("debugLogList");
+        if (listContainer) {
+            listContainer.innerHTML = '<div class="log-item log-item-info">💡 ล้าง Log เรียบร้อยแล้ว</div>';
+        }
     }
+
     function copyDebugLogs() {
-        if (debugLogs.length === 0) { alert("ไม่มี Log ให้คัดลอก"); return; }
-        const fullText = [นำลิงก์ที่น่าสงสัยออกแล้ว](l => l.text).join("\n");
-        navigator.clipboard.writeText(fullText).then(() => { alert("📋 คัดลอก Debug Log เรียบร้อยแล้ว!"); });
+        if (debugLogsList.length === 0) {
+            alert("ไม่มี Log ให้คัดลอก");
+            return;
+        }
+        navigator.clipboard.writeText(debugLogsList.join("\n")).then(function() {
+            alert("📋 คัดลอก Debug Log เรียบร้อยแล้ว!");
+        });
     }
 </script>
-
+    
 </body>
 </html>
