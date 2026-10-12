@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monnt Hub - Key System</title>
+    <title>Monnt Hub - Get Key System</title>
 
     <!-- Google reCAPTCHA API -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
@@ -11,7 +11,7 @@
     <!-- Supabase JS Client v2 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- Google Fonts Kanit -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
@@ -25,12 +25,13 @@
             --key-box-bg: #f1f5f9;
             --key-box-border: #cbd5e1;
             
+            /* สีฟ้าและน้ำเงินคงเดิมทุกโหมด */
             --blue-primary: #007aff;
             --blue-hover: #0056b3;
             --blue-glow: rgba(0, 122, 255, 0.35);
         }
 
-        /* 🌙 Auto Dark Mode - ปรับตามโหมดอุปกรณ์อัตโนมัติ */
+        /* 🌙 Auto Dark Mode - ปรับตามโหมดโทรศัพท์อัตโนมัติ */
         @media (prefers-color-scheme: dark) {
             :root {
                 --bg-color: #0b1120;
@@ -92,7 +93,7 @@
             margin-top: 4px;
         }
 
-        /* 🛡️ reCAPTCHA Wrapper */
+        /* 🛡️ reCAPTCHA Wrapper & แก้ไขขอบโดนตัด */
         .recaptcha-wrapper {
             display: flex;
             justify-content: center;
@@ -102,6 +103,7 @@
             min-height: 78px;
         }
 
+        /* ปรับย่อขนาด reCAPTCHA อัตโนมัติบนมือถือหน้าจอเล็ก ป้องกันการถูกตัดขอบ */
         @media (max-width: 360px) {
             .g-recaptcha {
                 transform: scale(0.85);
@@ -111,7 +113,7 @@
             }
         }
 
-        /* 🟦 ปุ่มกด Get Key (สีน้ำเงินมิติ 3D) */
+        /* 🟦 ปุ่มกด Get Key (สีน้ำเงินมิติ 3D + เงาฟุ้ง) */
         .btn-blue-3d {
             width: 100%;
             padding: 14px 20px;
@@ -163,7 +165,7 @@
             .alert-box { color: #fbbf24; }
         }
 
-        /* ⬇️ ลูกศรชี้ลง */
+        /* ⬇️ ลูกศรชี้ลงอนิเมชัน */
         .arrow-down {
             font-size: 2rem;
             margin: 4px 0 10px 0;
@@ -220,174 +222,173 @@
 </head>
 <body>
 
-<div class="container">
-    <!-- 📌 หัวการ์ด -->
-    <div class="header-text">
-        <h1>🔑 Monnt Hub Key System</h1>
-        <p>ยืนยันตัวตนเพื่อรับคีย์ใช้งานฟรี (8 Hours Key)</p>
-    </div>
-
-    <!-- 📌 ส่วนแสดงผลหลัก -->
-    <div id="mainContent">
-        <!-- 🛡️ ช่องยืนยัน Google reCAPTCHA -->
-        <div class="recaptcha-wrapper">
-            <div class="g-recaptcha" data-sitekey="6LfTP-ItAAAAAOhtEvGqoUzTgCjC9YC0x6-hc5KP"></div>
+    <div class="container">
+        <!-- 📌 หัวการ์ดเรียบหรู -->
+        <div class="header-text">
+            <h1>🔑 Monnt Hub Key System</h1>
+            <p>ยืนยันตัวตนเพื่อรับคีย์ใช้งานฟรี (8 Hours Key)</p>
         </div>
 
-        <!-- 🟦 ปุ่มรับคีย์ -->
-        <button class="btn-blue-3d" id="btnGet" onclick="handleGetKey()">
-            🔑 รับคีย์ (Get Key)
-        </button>
+        <!-- 📌 ส่วนแสดงผลหลัก (ควบคุมด้วย JS) -->
+        <div id="mainContent">
+            <!-- 🛡️ ช่องยืนยัน Google reCAPTCHA (ปรับแสดงผลเต็ม 100%) -->
+            <div class="recaptcha-wrapper">
+                <div class="g-recaptcha" data-sitekey="6LfTP-ItAAAAAOhtEvGqoUzTgCjC9YC0x6-hc5KP"></div>
+            </div>
+
+            <!-- 🟦 ปุ่มรับคีย์สีน้ำเงินมิติ 3D -->
+            <button class="btn-blue-3d" id="btnGet" onclick="handleGetKey()">
+                🔑 รับคีย์ (Get Key)
+            </button>
+        </div>
+
+        <div id="statusMsg" class="status-msg"></div>
+
+        <!-- 📦 กล่องแสดงผลคีย์เมื่อสร้างสำเร็จ -->
+        <div id="keyBox" class="key-box" style="display: none;">
+            <div id="keyDisplay" class="key-text"></div>
+            <div id="timeBadge" class="time-badge"></div>
+            <button class="btn-blue-3d btn-copy" onclick="copyKey()">📋 Copy Key (คัดลอกคีย์)</button>
+        </div>
     </div>
 
-    <div id="statusMsg" class="status-msg"></div>
+    <script>
+        // 📌 ตั้งค่าการเชื่อมต่อ Supabase Client JS V2
+        const SUPABASE_URL = "https://ulsujpqrdesndmuksqkr.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_mMHZfdWQC_8jaIQi40QLww_cJJI6scB";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const KEY_LIFETIME_MS = 8 * 60 * 60 * 1000; // 8 ชั่วโมง
 
-    <!-- 📦 กล่องแสดงผลคีย์เมื่อสร้างสำเร็จ -->
-    <div id="keyBox" class="key-box" style="display: none;">
-        <div id="keyDisplay" class="key-text"></div>
-        <div id="timeBadge" class="time-badge"></div>
-        <button class="btn-blue-3d btn-copy" onclick="copyKey()">📋 Copy Key (คัดลอกคีย์)</button>
-    </div>
-</div>
+        // 🔄 เช็กคีย์เดิมในเครื่องทันทีเมื่อเปิดหน้าเว็บ
+        window.addEventListener('DOMContentLoaded', checkExistingKey);
 
-<script>
-    // 📌 ตั้งค่าการเชื่อมต่อ Supabase Client JS V2
-    const SUPABASE_URL = "https://ulsujpqrdesndmuksqkr.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_mMHZfdWQC_8jaIQi40QLww_cJJI6scB";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const KEY_LIFETIME_MS = 8 * 60 * 60 * 1000; // 8 ชั่วโมง
+        function checkExistingKey() {
+            const savedData = localStorage.getItem("monnt_saved_key");
+            if (savedData) {
+                try {
+                    const keyObj = JSON.parse(savedData);
+                    const elapsedTime = Date.now() - keyObj.timestamp;
 
-    // 🔄 เช็กคีย์เดิมในเครื่องทันทีเมื่อเปิดหน้าเว็บ
-    window.addEventListener('DOMContentLoaded', checkExistingKey);
+                    // ถ้าคีย์ยังไม่หมดอายุ (< 8 ชั่วโมง)
+                    if (elapsedTime < KEY_LIFETIME_MS) {
+                        const remainingMs = KEY_LIFETIME_MS - elapsedTime;
+                        const hrs = Math.floor(remainingMs / (1000 * 60 * 60));
+                        const mins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
 
-    function checkExistingKey() {
-        const savedData = localStorage.getItem("monnt_saved_key");
-        if (savedData) {
-            try {
-                const keyObj = JSON.parse(savedData);
-                const elapsedTime = [นำลิงก์ที่น่าสงสัยออกแล้ว]() - keyObj.timestamp;
-
-                // ถ้าคีย์ยังไม่หมดอายุ (< 8 ชั่วโมง)
-                if (elapsedTime < KEY_LIFETIME_MS) {
-                    const remainingMs = KEY_LIFETIME_MS - elapsedTime;
-                    const hrs = Math.floor(remainingMs / (1000 * 60 * 60));
-                    const mins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
-
-                    renderExistingKeyUI(keyObj.key, hrs, mins);
-                } else {
+                        renderExistingKeyUI(keyObj.key, hrs, mins);
+                    } else {
+                        localStorage.removeItem("monnt_saved_key");
+                    }
+                } catch (e) {
                     localStorage.removeItem("monnt_saved_key");
                 }
-            } catch (e) {
-                localStorage.removeItem("monnt_saved_key");
             }
         }
-    }
 
-    // 🖼️ แสดงผล UI เมื่อพบคีย์เดิมที่ยังใช้งานได้
-    function renderExistingKeyUI(keyCode, hrs, mins) {
-        const mainContent = document.getElementById("mainContent");
-        const keyBox = document.getElementById("keyBox");
-        const keyDisplay = document.getElementById("keyDisplay");
-        const timeBadge = document.getElementById("timeBadge");
+        // 🖼️ แสดงผล UI เมื่อพบคีย์เดิมที่ยังใช้งานได้
+        function renderExistingKeyUI(keyCode, hrs, mins) {
+            const mainContent = document.getElementById("mainContent");
+            const keyBox = document.getElementById("keyBox");
+            const keyDisplay = document.getElementById("keyDisplay");
+            const timeBadge = document.getElementById("timeBadge");
 
-        mainContent.innerHTML = `
-            <div class="alert-box">
-                ⚠️ คุณมีคีย์เดิมที่ยังไม่หมดอายุอยู่แล้ว!
-            </div>
-            <div class="arrow-down">👇</div>
-        `;
+            mainContent.innerHTML = `
+                <div class="alert-box">
+                    ⚠️ คุณมีคีย์เดิมที่ยังไม่หมดอายุอยู่แล้ว!
+                </div>
+                <div class="arrow-down">👇</div>
+            `;
 
-        keyDisplay.innerText = keyCode;
-        timeBadge.innerText = `⏱️ เวลาคีย์คงเหลือประมาณ: ${hrs} ชั่วโมง ${mins} นาที`;
-        [นำลิงก์ที่น่าสงสัยออกแล้ว].display = "block";
-    }
-
-    // 🎲 สุ่มรหัส 22 ตัวอักษร
-    function generateRandomCode(length) {
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        let result = "";
-        for (let i = 0; i < length; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
-    }
-
-    // ⚡ ฟังก์ชันสร้างและบันทึกคีย์
-    async function handleGetKey() {
-        const statusDiv = document.getElementById("statusMsg");
-        const btnGet = document.getElementById("btnGet");
-
-        statusDiv.innerText = "";
-        [นำลิงก์ที่น่าสงสัยออกแล้ว].color = "#ef4444";
-
-        // 1. ตรวจสอบ Google reCAPTCHA
-        const recaptchaResponse = grecaptcha.getResponse();
-        if (!recaptchaResponse) {
-            statusDiv.innerText = "⚠️ กรุณาติ๊กยืนยัน reCAPTCHA ด้านบนก่อนครับ!";
-            return;
+            keyDisplay.innerText = keyCode;
+            timeBadge.innerText = `⏱️ เวลาคีย์คงเหลือประมาณ: ${hrs} ชั่วโมง ${mins} นาที`;
+            keyBox.style.display = "block";
         }
 
-        btnGet.disabled = true;
-        btnGet.innerText = "⏳ กำลังสร้างคีย์...";
-        [นำลิงก์ที่น่าสงสัยออกแล้ว].color = "#f59e0b";
-        statusDiv.innerText = "กำลังสร้างคีย์และบันทึกลงระบบ...";
+        // 🎲 สุ่มรหัส 22 ตัวอักษร
+        function generateRandomCode(length) {
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            let result = "";
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
 
-        // 2. สุ่มคีย์ฟอร์แมต MonntHub_8H-[สุ่ม 22 ตัว]
-        const randomPart = generateRandomCode(22);
-        const fullKey = "MonntHub_8H-" + randomPart;
+        // ⚡ ฟังก์ชันสร้างและบันทึกคีย์
+        async function handleGetKey() {
+            const statusDiv = document.getElementById("statusMsg");
+            const btnGet = document.getElementById("btnGet");
 
-        try {
-            // 3. บันทึกคีย์ลงตาราง keys บน Supabase
-            const { data, error } = await supabaseClient
-                .from('keys')
-                .insert([
-                    { key_code: fullKey, status: 'active' }
-                ]);
+            statusDiv.innerText = "";
+            statusDiv.style.color = "#ef4444";
 
-            if (error) {
-                console.error(error);
-                [นำลิงก์ที่น่าสงสัยออกแล้ว].color = "#ef4444";
-                statusDiv.innerText = "❌ บันทึกคีย์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
+            // 1. ตรวจสอบ Google reCAPTCHA
+            const recaptchaResponse = grecaptcha.getResponse();
+            if (!recaptchaResponse) {
+                statusDiv.innerText = "⚠️ กรุณาติ๊กยืนยัน reCAPTCHA ด้านบนก่อนครับ!";
+                return;
+            }
+
+            btnGet.disabled = true;
+            btnGet.innerText = "⏳ กำลังสร้างคีย์...";
+            statusDiv.style.color = "#f59e0b";
+            statusDiv.innerText = "กำลังสร้างคีย์และบันทึกลงระบบ...";
+
+            // 2. สุ่มคีย์ฟอร์แมต MonntHub_8H-[สุ่ม 22 ตัว]
+            const randomPart = generateRandomCode(22);
+            const fullKey = "MonntHub_8H-" + randomPart;
+
+            try {
+                // 3. บันทึกคีย์ลงตาราง keys บน Supabase
+                const { data, error } = await supabaseClient
+                    .from('keys')
+                    .insert([
+                        { key_code: fullKey, status: 'active' }
+                    ]);
+
+                if (error) {
+                    console.error(error);
+                    statusDiv.style.color = "#ef4444";
+                    statusDiv.innerText = "❌ บันทึกคีย์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
+                    btnGet.disabled = false;
+                    btnGet.innerText = "🔑 รับคีย์ (Get Key)";
+                } else {
+                    // เซฟคีย์ลง localStorage ในเครื่องผู้ใช้
+                    localStorage.setItem("monnt_saved_key", JSON.stringify({
+                        key: fullKey,
+                        timestamp: Date.now()
+                    }));
+
+                    statusDiv.style.color = "#10b981";
+                    statusDiv.innerText = "✅ สร้างคีย์สำเร็จแล้ว!";
+                    
+                    renderExistingKeyUI(fullKey, 8, 0);
+
+                    // รีเซ็ต reCAPTCHA
+                    if (typeof grecaptcha !== 'undefined') {
+                        grecaptcha.reset();
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                statusDiv.style.color = "#ef4444";
+                statusDiv.innerText = "❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล";
                 btnGet.disabled = false;
                 btnGet.innerText = "🔑 รับคีย์ (Get Key)";
-            } else {
-                // เซฟคีย์ลง localStorage ในเครื่องผู้ใช้
-                localStorage.setItem("monnt_saved_key", JSON.stringify({
-                    key: fullKey,
-                    timestamp: [นำลิงก์ที่น่าสงสัยออกแล้ว]()
-                }));
-
-                [นำลิงก์ที่น่าสงสัยออกแล้ว].color = "#10b981";
-                statusDiv.innerText = "✅ สร้างคีย์สำเร็จแล้ว!";
-                
-                renderExistingKeyUI(fullKey, 8, 0);
-
-                // รีเซ็ต reCAPTCHA
-                if (typeof grecaptcha !== 'undefined') {
-                    grecaptcha.reset();
-                }
             }
-        } catch (err) {
-            console.error(err);
-            [นำลิงก์ที่น่าสงสัยออกแล้ว].color = "#ef4444";
-            statusDiv.innerText = "❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล";
-            btnGet.disabled = false;
-            btnGet.innerText = "🔑 รับคีย์ (Get Key)";
         }
-    }
 
-    // 📋 คัดลอกคีย์
-    function copyKey() {
-        const keyText = document.getElementById("keyDisplay").innerText;
-        navigator.clipboard.writeText(keyText).then(() => {
-            const statusDiv = document.getElementById("statusMsg");
-            [นำลิงก์ที่น่าสงสัยออกแล้ว].color = "#007aff";
-            statusDiv.innerText = "📋 คัดลอกคีย์เรียบร้อยแล้ว!";
-        }).catch(() => {
-            alert("📋 คัดลอกคีย์เรียบร้อยแล้ว!");
-        });
-    }
-</script>
-
+        // 📋 คัดลอกคีย์
+        function copyKey() {
+            const keyText = document.getElementById("keyDisplay").innerText;
+            navigator.clipboard.writeText(keyText).then(() => {
+                const statusDiv = document.getElementById("statusMsg");
+                statusDiv.style.color = "#007aff";
+                statusDiv.innerText = "📋 คัดลอกคีย์เรียบร้อยแล้ว!";
+            }).catch(() => {
+                alert("📋 คัดลอกคีย์เรียบร้อยแล้ว!");
+            });
+        }
+    </script>
 </body>
 </html>
