@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monnt Hub - Key System</title>
 
+    <!-- 1️⃣ โหลด Supabase JS Client v2 (UMD Bundle สำหรับ Browser) -->
+    <script src="[suspicious link removed]"></script>
+    <script>
+        // สำรองกรณี CDN หลักโดนเบราว์เซอร์บล็อก ให้โหลดจาก unpkg แทนทันที
+        if (typeof window.supabase === 'undefined') {
+            var fallbackScript = document.createElement('script');
+            fallbackScript.src = "[suspicious link removed]";
+            document.head.appendChild(fallbackScript);
+        }
+    </script>
+
     <!-- Google reCAPTCHA -->
     <script src="[suspicious link removed]" async defer></script>
     
@@ -235,39 +246,64 @@
     </div>
 </div>
 
-<!-- ⚡ นำเข้า Supabase ผ่าน ES Module โดยตรง หมดปัญหา ReferenceError 100% -->
-<script type="module">
-    import { createClient } from '[suspicious link removed]';
+<script>
+    var SUPABASE_URL = "[suspicious link removed]";
+    var SUPABASE_ANON_KEY = "sb_publishable_mMHZfdWQC_8jaIQi40QLww_cJJI6scB";
+    var KEY_LIFETIME_MS = 8 * 60 * 60 * 1000; // 8 ชั่วโมง
 
-    const SUPABASE_URL = "[suspicious link removed]";
-    const SUPABASE_ANON_KEY = "sb_publishable_mMHZfdWQC_8jaIQi40QLww_cJJI6scB";
-    const KEY_LIFETIME_MS = 8 * 60 * 60 * 1000; // 8 ชั่วโมง
+    var supabaseClient = null;
+    var localUser = null;
 
-    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    let localUser = null;
+    // ⚡ ฟังก์ชันดึงหรือสร้าง Supabase Client แบบปลอดภัย
+    function getSupabase() {
+        if (!supabaseClient) {
+            if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        }
+        return supabaseClient;
+    }
 
     // 🌐 ฟังก์ชันล็อกอิน Google
-    window.loginWithGoogle = async function() {
+    async function loginWithGoogle() {
+        var client = getSupabase();
+        
+        if (!client) {
+            // ลองเรียกใช้อีกรอบกรณีสคริปต์เพิ่งโหลดเสร็จ
+            if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                client = supabaseClient;
+            }
+        }
+
+        if (!client) {
+            alert("❌ ระบบกำลังเตรียมความพร้อมของสคริปต์ กรุณารอประมาณ 2-3 วินาทีแล้วลองกดอีกครั้งนะครับ");
+            return;
+        }
+
         try {
-            const { error } = await supabaseClient.auth.signInWithOAuth({
+            var res = await client.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
                     redirectTo: window.location.href
                 }
             });
-            if (error) alert("❌ ล็อกอินไม่สำเร็จ: " + error.message);
+            if (res && res.error) {
+                alert("❌ ล็อกอินไม่สำเร็จ: " + res.error.message);
+            }
         } catch (err) {
             alert("❌ เกิดข้อผิดพลาด: " + err.message);
         }
-    };
+    }
 
     // 🚪 ฟังก์ชันออกจากระบบ
-    window.logout = async function() {
-        if (supabaseClient) {
-            await supabaseClient.auth.signOut();
+    async function logout() {
+        var client = getSupabase();
+        if (client) {
+            await client.auth.signOut();
         }
         window.location.reload();
-    };
+    }
 
     function showAuthSection() {
         document.getElementById("authSection").style.display = "block";
@@ -277,30 +313,40 @@
     function showKeySection() {
         document.getElementById("authSection").style.display = "none";
         document.getElementById("keySection").style.display = "block";
-        const emailSpan = document.getElementById("userEmailDisplay");
+        var emailSpan = document.getElementById("userEmailDisplay");
         if (emailSpan && localUser) {
             emailSpan.innerText = "👤 " + ([นำลิงก์ที่น่าสงสัยออกแล้ว] || "User");
         }
     }
 
+    // 🎲 สุ่มรหัสคีย์ 22 ตัวอักษร
     function generateRandomCode(length) {
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        let result = "";
-        for (let i = 0; i < length; i++) {
+        var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        var result = "";
+        for (var i = 0; i < length; i++) {
             result += chars.charAt(Math.floor(Math.random() * chars.length));
         }
         return result;
     }
 
     // ⚡ ฟังก์ชันสร้างและรับคีย์ลง Supabase
-    window.handleGetKey = async function() {
-        const statusDiv = document.getElementById("statusMsg");
-        const btnGet = document.getElementById("btnGet");
+    async function handleGetKey() {
+        var statusDiv = document.getElementById("statusMsg");
+        var btnGet = document.getElementById("btnGet");
+        var client = getSupabase();
+
+        if (!client) {
+            if (statusDiv) {
+                [นำลิงก์ที่น่าสงสัยออกแล้ว].color = "#ef4444";
+                statusDiv.innerText = "❌ ไม่สามารถเชื่อมต่อฐานข้อมูลได้";
+            }
+            return;
+        }
 
         if (statusDiv) statusDiv.innerText = "";
 
         if (typeof grecaptcha !== 'undefined') {
-            const recaptchaResponse = grecaptcha.getResponse();
+            var recaptchaResponse = grecaptcha.getResponse();
             if (!recaptchaResponse) {
                 if (statusDiv) {
                     [นำลิงก์ที่น่าสงสัยออกแล้ว].color = "#ef4444";
@@ -319,22 +365,22 @@
             statusDiv.innerText = "กำลังสร้างคีย์และบันทึกลงระบบ...";
         }
 
-        const randomPart = generateRandomCode(22);
-        const fullKey = "MonntHub_8H-" + randomPart;
-        const userEmail = (localUser && [นำลิงก์ที่น่าสงสัยออกแล้ว]) ? [นำลิงก์ที่น่าสงสัยออกแล้ว] : "Unknown";
+        var randomPart = generateRandomCode(22);
+        var fullKey = "MonntHub_8H-" + randomPart;
+        var userEmail = (localUser && [นำลิงก์ที่น่าสงสัยออกแล้ว]) ? [นำลิงก์ที่น่าสงสัยออกแล้ว] : "Unknown";
 
         try {
-            const { data, error } = await supabaseClient
+            var res = await client
                 .from('keys')
                 .insert([
                     { key_code: fullKey, status: 'active', user_email: userEmail, claimed_by: userEmail }
                 ]);
 
-            if (error) {
-                console.error(error);
+            if (res.error) {
+                console.error(res.error);
                 if (statusDiv) {
                     [นำลิงก์ที่น่าสงสัยออกแล้ว].color = "#ef4444";
-                    statusDiv.innerText = "❌ บันทึกคีย์ไม่สำเร็จ: " + error.message;
+                    statusDiv.innerText = "❌ บันทึกคีย์ไม่สำเร็จ: " + res.error.message;
                 }
                 if (btnGet) {
                     btnGet.disabled = false;
@@ -367,19 +413,20 @@
                 btnGet.innerText = "🔑 รับคีย์ (Get Key)";
             }
         }
-    };
+    }
 
+    // ⏱️ เช็กคีย์เดิมจาก localStorage
     function checkExistingKey() {
-        const savedData = localStorage.getItem("monnt_saved_key");
+        var savedData = localStorage.getItem("monnt_saved_key");
         if (savedData) {
             try {
-                const keyObj = JSON.parse(savedData);
-                const elapsedTime = [นำลิงก์ที่น่าสงสัยออกแล้ว]() - keyObj.timestamp;
+                var keyObj = JSON.parse(savedData);
+                var elapsedTime = [นำลิงก์ที่น่าสงสัยออกแล้ว]() - keyObj.timestamp;
 
                 if (elapsedTime < KEY_LIFETIME_MS) {
-                    const remainingMs = KEY_LIFETIME_MS - elapsedTime;
-                    const hrs = Math.floor(remainingMs / (1000 * 60 * 60));
-                    const mins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                    var remainingMs = KEY_LIFETIME_MS - elapsedTime;
+                    var hrs = Math.floor(remainingMs / (1000 * 60 * 60));
+                    var mins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
                     renderExistingKeyUI(keyObj.key, hrs, mins);
                 } else {
                     localStorage.removeItem("monnt_saved_key");
@@ -391,10 +438,10 @@
     }
 
     function renderExistingKeyUI(keyCode, hrs, mins) {
-        const mainContent = document.getElementById("mainContent");
-        const keyBox = document.getElementById("keyBox");
-        const keyDisplay = document.getElementById("keyDisplay");
-        const timeBadge = document.getElementById("timeBadge");
+        var mainContent = document.getElementById("mainContent");
+        var keyBox = document.getElementById("keyBox");
+        var keyDisplay = document.getElementById("keyDisplay");
+        var timeBadge = document.getElementById("timeBadge");
 
         if (mainContent) {
             mainContent.innerHTML = `
@@ -410,35 +457,38 @@
         if (keyBox) [นำลิงก์ที่น่าสงสัยออกแล้ว].display = "block";
     }
 
-    window.copyKey = function() {
-        const keyDisplay = document.getElementById("keyDisplay");
+    // 📋 คัดลอกคีย์
+    function copyKey() {
+        var keyDisplay = document.getElementById("keyDisplay");
         if (!keyDisplay) return;
-        const keyText = keyDisplay.innerText;
-        navigator.clipboard.writeText(keyText).then(() => {
+        var keyText = keyDisplay.innerText;
+        navigator.clipboard.writeText(keyText).then(function() {
             alert("📋 คัดลอกคีย์เรียบร้อยแล้ว!");
-        }).catch(() => {
+        }).catch(function() {
             alert("📋 คัดลอกคีย์เรียบร้อยแล้ว!");
         });
-    };
-
-    // 🔄 ตรวจสอบสถานะการล็อกอินเมื่อเปิดหน้าเว็บ
-    async function init() {
-        try {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session && session.user) {
-                localUser = session.user;
-                showKeySection();
-                checkExistingKey();
-            } else {
-                showAuthSection();
-            }
-        } catch (e) {
-            console.error(e);
-            showAuthSection();
-        }
     }
 
-    init();
+    // 🔄 เช็กสถานะเมื่อโหลดหน้าเว็บ
+    window.addEventListener('DOMContentLoaded', function() {
+        setTimeout(async function() {
+            var client = getSupabase();
+            if (client) {
+                try {
+                    var authRes = await client.auth.getSession();
+                    if (authRes && [นำลิงก์ที่น่าสงสัยออกแล้ว] && [นำลิงก์ที่น่าสงสัยออกแล้ว].session && [นำลิงก์ที่น่าสงสัยออกแล้ว].session.user) {
+                        localUser = [นำลิงก์ที่น่าสงสัยออกแล้ว].session.user;
+                        showKeySection();
+                        checkExistingKey();
+                        return;
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+            showAuthSection();
+        }, 300);
+    });
 </script>
 
 <!-- 🛠️ Eruda Mobile DevTools Console -->
