@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monnt Hub - Admin Panel</title>
+
+    <!-- Supabase JS Client v2 -->
+    <script src="[suspicious link removed]"></script>
+    <!-- Google Font -->
+    <link href="[suspicious link removed]" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #0b1120;
+            --card-bg: #162032;
+            --card-border: #1e293b;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --key-box-bg: #0f172a;
+            --blue-primary: #007aff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .admin-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            width: 100%;
+            max-width: 900px;
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 16px;
+        }
+
+        .header h1 {
+            font-size: 1.4rem;
+            color: var(--blue-primary);
+        }
+
+        .btn-back {
+            background-color: var(--key-box-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-sub);
+            padding: 6px 14px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+        .btn-back:hover {
+            color: var(--text-main);
+            border-color: var(--blue-primary);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid var(--card-border);
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: var(--key-box-bg);
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        .badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .badge-active { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .badge-suspended { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+        .btn-action {
+            padding: 5px 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 4px;
+        }
+        .btn-suspend { background: #f59e0b; color: #fff; }
+        .btn-unsuspend { background: #10b981; color: #fff; }
+        .btn-delete { background: #ef4444; color: #fff; }
+
+        .access-denied {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .access-denied h2 { color: #ef4444; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="admin-card">
+    <div id="deniedScreen" class="access-denied" style="display: none;">
+        <h2>⛔ สิทธิ์ไม่ถูกต้อง (Access Denied)</h2>
+        <p id="deniedMsg" style="color: var(--text-sub); margin-bottom: 16px;">กำลังตรวจสอบสิทธิ์...</p>
+        <a href="../index.html" class="btn-back">⬅️ กลับหน้าหลัก</a>
+    </div>
+
+    <div id="adminScreen" style="display: none;">
+        <div class="header">
+            <div>
+                <h1>🛡️ Monnt Hub - Admin Panel</h1>
+                <p style="font-size: 0.85rem; color: var(--text-sub); margin-top: 4px;">
+                    จัดการคีย์ทั้งหมดในระบบ (เรียงจากล่าสุด ➔ นานแล้ว)
+                </p>
+            </div>
+            <a href="../index.html" class="btn-back">🏠 หน้าหลักผู้ใช้</a>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>รหัสคีย์ (Key)</th>
+                        <th>อีเมลผู้รับ (Claimed By)</th>
+                        <th>เวลาที่กดรับ</th>
+                        <th>สถานะ</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="keyTableBody">
+                    <tr><td colspan="5" style="text-align: center;">⏳ กำลังโหลดข้อมูล...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = "[suspicious link removed]";
+    const SUPABASE_ANON_KEY = "sb_publishable_mMHZfdWQC_8jaIQi40QLww_cJJI6scB";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const ADMIN_EMAIL = "admin.monntshop@gmail.com";
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        
+        if (!session || !session.user) {
+            showDenied("กรุณาเข้าสู่ระบบด้วย Google ที่หน้าหลักก่อนเข้าหน้านี้");
+            return;
+        }
+
+        const userEmail = [นำลิงก์ที่น่าสงสัยออกแล้ว];
+        if (userEmail !== ADMIN_EMAIL) {
+            showDenied(`อีเมลของคุณ (${userEmail}) ไม่มีสิทธิ์เข้าถึงหน้า Admin`);
+            return;
+        }
+
+        document.getElementById("deniedScreen").style.display = "none";
+        document.getElementById("adminScreen").style.display = "block";
+        await loadKeysData();
+    });
+
+    function showDenied(msg) {
+        document.getElementById("adminScreen").style.display = "none";
+        document.getElementById("deniedScreen").style.display = "block";
+        document.getElementById("deniedMsg").innerText = msg;
+    }
+
+    async function loadKeysData() {
+        const tbody = document.getElementById("keyTableBody");
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">⏳ กำลังโหลดข้อมูล...</td></tr>`;
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('keys')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">📭 ไม่พบข้อมูลคีย์ในระบบ</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = "";
+            data.forEach(item => {
+                const tr = document.createElement("tr");
+
+                const userEmail = item.claimed_by || item.user_email || "ไม่ระบุ";
+                const createdTime = item.created_at ? new Date(item.created_at).toLocaleString('th-TH') : "ไม่ระบุเวลา";
+                const isSuspended = item.status === "suspended";
+
+                tr.innerHTML = `
+                    <td style="font-family: monospace; font-weight: bold; color: var(--blue-primary);">${item.key_code}</td>
+                    <td>${userEmail}</td>
+                    <td>${createdTime}</td>
+                    <td>
+                        <span class="badge ${isSuspended ? 'badge-suspended' : 'badge-active'}">
+                            ${isSuspended ? 'ระงับอยู่' : 'ใช้งานได้'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn-action ${isSuspended ? 'btn-unsuspend' : 'btn-suspend'}" onclick="toggleSuspendKey('${item.key_code}', '${item.status}')">
+                            ${isSuspended ? '✅ ปลดระงับ' : '⛔ ระงับ'}
+                        </button>
+                        <button class="btn-action btn-delete" onclick="deleteKey('${item.key_code}')">
+                            🗑️ ลบ
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ef4444;">❌ โหลดข้อมูลล้มเหลว: ${err.message}</td></tr>`;
+        }
+    }
+
+    // ⛔ สลับสถานะ ระงับ / ปลดระงับ
+    async function toggleSuspendKey(keyCode, currentStatus) {
+        const newStatus = currentStatus === "suspended" ? "active" : "suspended";
+        const actionName = newStatus === "suspended" ? "ระงับคีย์นี้" : "ปลดระงับคีย์นี้";
+
+        const isConfirmed = confirm(`คุณต้องการ${actionName}หรือไม่?\n\nKey: ${keyCode}`);
+        if (!isConfirmed) return;
+
+        const { error } = await supabaseClient
+            .from('keys')
+            .update({ status: newStatus })
+            .eq('key_code', keyCode);
+
+        if (error) {
+            alert("❌ ปรับอัปเดตสถานะไม่สำเร็จ: " + error.message);
+        } else {
+            await loadKeysData();
+        }
+    }
+
+    // 🗑️ ลบคีย์ถาวร (ต้องพิมพ์ #monnt2026)
+    async function deleteKey(keyCode) {
+        const userInput = prompt(`⚠️ คุณแน่ใจต้องการลบคีย์นี้\nโปรดพิมพ์ #monnt2026 เพื่อลบ\n\nKey: ${keyCode}`);
+
+        if (userInput === null) return;
+
+        if (userInput !== "#monnt2026") {
+            alert("❌ ข้อความยืนยันไม่ถูกต้อง! การลบคีย์ถูกยกเลิก");
+            return;
+        }
+
+        const { error } = await supabaseClient
+            .from('keys')
+            .delete()
+            .eq('key_code', keyCode);
+
+        if (error) {
+            alert("❌ ลบคีย์ไม่สำเร็จ: " + error.message);
+        } else {
+            alert("✅ ลบคีย์เรียบร้อยแล้ว!");
+            await loadKeysData();
+        }
+    }
+</script>
+
+</body>
+</html>
