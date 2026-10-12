@@ -67,7 +67,7 @@
             margin-top: 4px;
         }
 
-        /* 🌐 ปุ่ม Google Login พร้อมโลโก้ SVG */
+        /* 🌐 ปุ่ม Google Login */
         .btn-google {
             width: 100%;
             padding: 12px 18px;
@@ -177,7 +177,7 @@
         <p>ยืนยันตัวตนเพื่อรับคีย์ใช้งานฟรี (8 Hours Key)</p>
     </div>
 
-    <!-- 🌐 1. หน้าด่านล็อกอิน Google (ถ้ายังไม่ล็อกอิน จะเห็นแค่ส่วนนี้) -->
+    <!-- 🌐 1. หน้าด่านล็อกอิน Google -->
     <div id="authSection" style="display: block;">
         <p style="font-size: 0.88rem; color: var(--text-sub); margin-bottom: 12px;">
             กรุณาเข้าสู่ระบบด้วย Google ก่อนเข้าสู่หน้ารับคีย์
@@ -193,7 +193,7 @@
         </button>
     </div>
 
-    <!-- 🔑 2. หน้ากดรับคีย์เต็มรูปแบบ (เปิดขึ้นมาอัตโนมัติเมื่อล็อกอินสำเร็จ) -->
+    <!-- 🔑 2. หน้ากดรับคีย์ -->
     <div id="keySection" style="display: none;">
         <div class="user-info-bar">
             <span id="userEmailDisplay">👤 ...</span>
@@ -220,7 +220,7 @@
 </div>
 
 <script>
-    // 📌 ตั้งค่าการเชื่อมต่อ Supabase Client
+    // 📌 1. ประกาศตัวแปร Supabase ไว้บนสุดเสมอเพื่อป้องกัน ReferenceError
     const SUPABASE_URL = "[suspicious link removed]";
     const SUPABASE_ANON_KEY = "sb_publishable_mMHZfdWQC_8jaIQi40QLww_cJJI6scB";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -228,19 +228,7 @@
     const KEY_LIFETIME_MS = 8 * 60 * 60 * 1000; // 8 ชั่วโมง
     let localUser = null;
 
-    // 🔄 เช็กสถานะการล็อกอินทันทีเมื่อเปิดหน้าเว็บ
-    window.addEventListener('DOMContentLoaded', async () => {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session && session.user) {
-            localUser = session.user;
-            showKeySection();
-            checkExistingKey();
-        } else {
-            showAuthSection();
-        }
-    });
-
-    // 🌐 เข้าสู่ระบบผ่าน Google OAuth
+    // 🌐 2. ฟังก์ชันเข้าสู่ระบบผ่าน Google OAuth
     async function loginWithGoogle() {
         const { error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
@@ -251,7 +239,7 @@
         if (error) alert("❌ ล็อกอินไม่สำเร็จ: " + error.message);
     }
 
-    // 🚪 ออกจากระบบ
+    // 🚪 3. ฟังก์ชันออกจากระบบ
     async function logout() {
         await supabaseClient.auth.signOut();
         window.location.reload();
@@ -302,7 +290,6 @@
         const userEmail = localUser ? [นำลิงก์ที่น่าสงสัยออกแล้ว] : "Unknown";
 
         try {
-            // บันทึกคีย์ลง Supabase
             const { data, error } = await supabaseClient
                 .from('keys')
                 .insert([
@@ -381,8 +368,23 @@
             alert("📋 คัดลอกคีย์เรียบร้อยแล้ว!");
         });
     }
+
+    // 🔄 เช็กสถานะการล็อกอินเมื่อเปิดหน้าเว็บ
+    window.addEventListener('DOMContentLoaded', async () => {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session && session.user) {
+            localUser = session.user;
+            showKeySection();
+            checkExistingKey();
+        } else {
+            showAuthSection();
+        }
+    });
 </script>
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+
+<!-- 🛠️ Eruda Mobile DevTools Console -->
+<script src="[suspicious link removed]"></script>
 <script>eruda.init();</script>
+
 </body>
 </html>
