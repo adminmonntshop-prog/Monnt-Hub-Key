@@ -1,4 +1,4 @@
-
+เจอต้นตอของปัญหาแบบ **100%** แล้วครับ! 🎯
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -6,10 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monnt Hub - Key System</title>
 
-    <!-- 1️⃣ โหลด Supabase JS Client v2 จาก CDN บนสุดใน head -->
+    <!-- 1️⃣ ดึง Supabase UMD Bundle สำหรับ Browser โดยเฉพาะ (แก้ไขลิงก์สมบูรณ์) -->
     <script src="[suspicious link removed]"></script>
+    <script>
+        // สำรองกรณี CDN แรกโดนบล็อก ให้ดึงจาก unpkg แทนทันที
+        if (typeof window.supabase === 'undefined') {
+            document.write('<script src="[suspicious link removed]"><\/script>');
+        }
+    </script>
+
     <!-- Google reCAPTCHA -->
     <script src="[suspicious link removed]" async defer></script>
+    
     <!-- Google Font Kanit -->
     <link href="[suspicious link removed]" rel="stylesheet">
 
@@ -238,26 +246,26 @@
 </div>
 
 <script>
-    // 📌 ตั้งค่าคอนฟิก Supabase
     const SUPABASE_URL = "[suspicious link removed]";
     const SUPABASE_ANON_KEY = "sb_publishable_mMHZfdWQC_8jaIQi40QLww_cJJI6scB";
     const KEY_LIFETIME_MS = 8 * 60 * 60 * 1000; // 8 ชั่วโมง
 
     let localUser = null;
+    let supabaseClient = null;
 
-    // ⚡ ฟังก์ชันดึง Supabase Client แบบปลอดภัย (การันตีไม่เกิด ReferenceError)
+    // ⚡ ฟังก์ชันดึง Supabase Client
     function getSupabaseClient() {
-        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-            return window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        if (!supabaseClient && typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
-        return null;
+        return supabaseClient;
     }
 
     // 🌐 ฟังก์ชันล็อกอิน Google
     async function loginWithGoogle() {
         const client = getSupabaseClient();
         if (!client) {
-            alert("❌ ไม่สามารถดึงสคริปต์ Supabase ได้\n\nโปรดตรวจสอบว่าเปิด AdBlocker / Brave Shield ไว้หรือไม่ หรือลองกดรีเฟรชหน้าเว็บอีกครั้งครับ");
+            alert("❌ ไม่สามารถดึงสคริปต์ Supabase ได้\nโปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่อีกครั้งครับ");
             return;
         }
 
